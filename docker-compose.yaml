@@ -1,0 +1,34 @@
+volumes:
+  data:
+    driver: local
+services:
+  postgres:
+    image: postgres:latest
+    ports:
+      - 7899:5432
+    volumes:
+      - data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "${USERNAME:-test}"]
+      interval: 1m30s
+      timeout: 30s
+      retries: 5
+      start_period: 30s
+      start_interval: 5s
+    environment:
+      POSTGRES_DB: NEWDB1
+      POSTGRES_USER: ${USERNAME:-test}
+      POSTGRES_PASSWORD: ${PASSWORD:-test}
+  app:
+    depends_on:
+      postgres:
+        condition: service_healthy
+    image: app:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command:
+      - "-host=postgres"
+      - "-port=5432"
+      - "-username=${USERNAME:-test}"
+      - "-password=${PASSWORD:-test}"
